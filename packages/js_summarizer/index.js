@@ -1,7 +1,7 @@
 import { YoutubeTranscript } from "youtube-transcript";
+import fs from "fs";
 import { OpenAI } from "openai";
 
-// https://platform.openai.com/docs/api-reference/chat
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
@@ -9,7 +9,6 @@ const openai = new OpenAI({
 const ask4 = async (messages, config = {}) => {
   if (config?.format === "json") {
     config.model = "gpt-4-1106-preview";
-    // gpt-3.5-turbo-1106
     config.response_format = { type: "json_object" };
   }
 
@@ -27,9 +26,26 @@ const ask4 = async (messages, config = {}) => {
   return response;
 };
 
-const response = await YoutubeTranscript.fetchTranscript(
+const retrieveVideoId = (videoId) => {
+  if (videoId.length === 11) {
+    return videoId;
+  }
+  const RE_YOUTUBE =
+    /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i;
+  let matchId = videoId.match(RE_YOUTUBE);
+  if (matchId && matchId.length) {
+    return matchId[1];
+  }
+
+  return videoId;
+};
+
+const videoId = retrieveVideoId(
+  //'https://www.youtube.com/watch?v=HNiJvrZTGsA'
   "https://www.youtube.com/watch?v=5g4xB4yjHSk"
 );
+
+const response = await YoutubeTranscript.fetchTranscript(videoId);
 
 console.log(response);
 
@@ -42,6 +58,24 @@ transcript.trim();
 
 //console.log(transcript);
 
+if (!fs.existsSync(`./${videoId}`)) {
+  fs.mkdirSync(`./${videoId}`);
+}
+
+/*fs.writeFile(
+	`./${videoId}/transcript.json`,
+	JSON.stringify(response, null, 4),
+	(err) => {
+		if (err) throw err;
+		console.log('saved transcript to json');
+	}
+);*/
+
+fs.writeFile(`./${videoId}/transcript.txt`, transcript, (err) => {
+  if (err) throw err;
+  console.log("saved transcript to txt");
+});
+
 const system = `Du sollst Youtube Transcripts kurz und verständlich zusammenfassen und auf das wesentliche reduzieren.`;
 const prompt = `Fasse mir das folgende Transcript zusammmen:`;
 
@@ -53,3 +87,8 @@ const messages = [
 
 let answer = await ask4(messages);
 console.log(answer);
+
+fs.writeFile(`./${videoId}/answer.txt`, answer, (err) => {
+  if (err) throw err;
+  console.log("saved answer to txt");
+});
