@@ -40,55 +40,70 @@ const retrieveVideoId = (videoId) => {
   return videoId;
 };
 
+const retrieve_transcript = (videoID) => {
+  let transcript = ``;
+  for (const part of response) {
+    transcript += `${part.text.replace(/(\r\n|\n|\r)/gm, "")} `;
+  }
+  transcript.trim();
+  return transcript;
+};
+
+const write_out_transcript = (transcript, video_out_path) => {
+  const video_transcript_file_path = `${video_out_path}/transcript`;
+  if (!fs.existsSync(`${video_out_path}`)) {
+    fs.mkdirSync(`${video_out_path}`);
+  }
+
+  fs.writeFile(
+    `${video_transcript_file_path}.json`,
+    JSON.stringify(response, null, 4),
+    (err) => {
+      if (err) throw err;
+      console.log("saved transcript to json");
+    }
+  );
+
+  fs.writeFile(`${video_transcript_file_path}.txt`, transcript, (err) => {
+    if (err) throw err;
+    console.log("saved transcript to txt");
+  });
+
+  return null;
+};
+
+const write_out_summary = (summary, video_out_path) => {
+  const video_transcript_summary_file_path = `${video_out_path}/summary`;
+  fs.writeFile(`${video_transcript_summary_file_path}.txt`, summary, (err) => {
+    if (err) throw err;
+    console.log("saved summary to txt");
+  });
+};
+
+const get_summary = async (transcript) => {
+  const messages = [
+    { role: "system", content: prompt },
+    { role: "user", content: transcript },
+  ];
+
+  let answer = await ask4(messages);
+  return answer;
+};
+
 const videoId = retrieveVideoId(
   //'https://www.youtube.com/watch?v=HNiJvrZTGsA'
   "https://www.youtube.com/watch?v=5g4xB4yjHSk"
 );
 
-const indir = "../../inputs";
-
-const outdir = "../../outputs";
+const PROJECT_PATH = "./";
+const INDIR = PROJECT_PATH + "../../inputs";
+const OUTDIR = PROJECT_PATH + "../../outputs";
 const response = await YoutubeTranscript.fetchTranscript(videoId);
-const video_out_path = `${outdir}/${videoId}`;
-const video_transcript_file_path = `${video_out_path}/transcript`;
-const video_transcript_summary_file_path = `${video_out_path}/summary`;
-const prompt = fs.readFileSync(`${indir}/prompt.txt`, "utf8");
+const video_out_path = `${OUTDIR}/${videoId}`;
 
-let transcript = ``;
-for (const part of response) {
-  transcript += `${part.text.replace(/(\r\n|\n|\r)/gm, "")} `;
-}
-transcript.trim();
+const prompt = fs.readFileSync(`${INDIR}/prompt.txt`, "utf8");
 
-//console.log(transcript);
-
-if (!fs.existsSync(`${video_out_path}`)) {
-  fs.mkdirSync(`${video_out_path}`);
-}
-
-fs.writeFile(
-  `${video_transcript_file_path}.json`,
-  JSON.stringify(response, null, 4),
-  (err) => {
-    if (err) throw err;
-    console.log("saved transcript to json");
-  }
-);
-
-fs.writeFile(`${video_transcript_file_path}.txt`, transcript, (err) => {
-  if (err) throw err;
-  console.log("saved transcript to txt");
-});
-
-const messages = [
-  { role: "system", content: prompt },
-  { role: "user", content: transcript },
-];
-
-let answer = await ask4(messages);
-console.log(answer);
-
-fs.writeFile(`${video_transcript_summary_file_path}.txt`, answer, (err) => {
-  if (err) throw err;
-  console.log("saved answer to txt");
-});
+let transcript = retrieve_transcript(videoId);
+write_out_transcript(transcript, video_out_path);
+let summary = await get_summary(transcript);
+write_out_summary(summary, video_out_path);
