@@ -45,11 +45,14 @@ const videoId = retrieveVideoId(
   "https://www.youtube.com/watch?v=5g4xB4yjHSk"
 );
 
+const indir = "../../inputs";
+
 const outdir = "../../outputs";
 const response = await YoutubeTranscript.fetchTranscript(videoId);
 const video_out_path = `${outdir}/${videoId}`;
 const video_transcript_file_path = `${video_out_path}/transcript`;
 const video_transcript_summary_file_path = `${video_out_path}/summary`;
+const prompt = fs.readFileSync(`${indir}/prompt.txt`, "utf8");
 
 let transcript = ``;
 for (const part of response) {
@@ -76,8 +79,6 @@ fs.writeFile(`${video_transcript_file_path}.txt`, transcript, (err) => {
   if (err) throw err;
   console.log("saved transcript to txt");
 });
-
-const prompt = `Fasse mir das folgende Transcript zusammen:`;
 
 const messages = [
   { role: "system", content: prompt },
