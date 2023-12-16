@@ -1,7 +1,7 @@
 import { YoutubeTranscript } from 'youtube-transcript';
 import { OpenAI } from 'openai';
 
-
+// https://platform.openai.com/docs/api-reference/chat
 const openai = new OpenAI({
 apiKey: process.env.OPENAI_API_KEY,
 });
@@ -10,6 +10,7 @@ apiKey: process.env.OPENAI_API_KEY,
 const ask4 = async (messages, config = {}) => {
 if (config?.format === 'json') {
 config.model = 'gpt-4-1106-preview';
+// gpt-3.5-turbo-1106
 config.response_format = { type: 'json_object' };
 }
 
@@ -32,7 +33,6 @@ return response;
 
 
 const response = await YoutubeTranscript.fetchTranscript(
-//'https://www.youtube.com/watch?v=HNiJvrZTGsA'
 'https://www.youtube.com/watch?v=5g4xB4yjHSk'
 );
 
