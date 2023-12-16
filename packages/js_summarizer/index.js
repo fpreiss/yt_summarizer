@@ -2,6 +2,10 @@ import { YoutubeTranscript } from "youtube-transcript";
 import fs from "fs";
 import { OpenAI } from "openai";
 
+const PROJECT_PATH = "./";
+const INDIR = PROJECT_PATH + "../../inputs";
+const OUTDIR = PROJECT_PATH + "../../outputs";
+
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
@@ -40,7 +44,9 @@ const retrieveVideoId = (videoId) => {
   return videoId;
 };
 
-const retrieve_transcript = (videoID) => {
+const retrieve_transcript = async (videoID) => {
+  const response = await YoutubeTranscript.fetchTranscript(videoID);
+
   let transcript = ``;
   for (const part of response) {
     transcript += `${part.text.replace(/(\r\n|\n|\r)/gm, "")} `;
@@ -54,15 +60,6 @@ const write_out_transcript = (transcript, video_out_path) => {
   if (!fs.existsSync(`${video_out_path}`)) {
     fs.mkdirSync(`${video_out_path}`);
   }
-
-  fs.writeFile(
-    `${video_transcript_file_path}.json`,
-    JSON.stringify(response, null, 4),
-    (err) => {
-      if (err) throw err;
-      console.log("saved transcript to json");
-    }
-  );
 
   fs.writeFile(`${video_transcript_file_path}.txt`, transcript, (err) => {
     if (err) throw err;
@@ -80,7 +77,7 @@ const write_out_summary = (summary, video_out_path) => {
   });
 };
 
-const get_summary = async (transcript) => {
+const get_summary = async (prompt, transcript) => {
   const messages = [
     { role: "system", content: prompt },
     { role: "user", content: transcript },
@@ -90,20 +87,15 @@ const get_summary = async (transcript) => {
   return answer;
 };
 
-const videoId = retrieveVideoId(
-  //'https://www.youtube.com/watch?v=HNiJvrZTGsA'
-  "https://www.youtube.com/watch?v=5g4xB4yjHSk"
-);
+const video_urls = fs.readFileSync(`${INDIR}/video_urls.txt`, "utf8");
+for (let url of video_urls.split("\n")) {
+  const videoId = retrieveVideoId(url);
 
-const PROJECT_PATH = "./";
-const INDIR = PROJECT_PATH + "../../inputs";
-const OUTDIR = PROJECT_PATH + "../../outputs";
-const response = await YoutubeTranscript.fetchTranscript(videoId);
-const video_out_path = `${OUTDIR}/${videoId}`;
+  const video_out_path = `${OUTDIR}/${videoId}`;
+  const prompt = fs.readFileSync(`${INDIR}/prompt.txt`, "utf8");
 
-const prompt = fs.readFileSync(`${INDIR}/prompt.txt`, "utf8");
-
-let transcript = retrieve_transcript(videoId);
-write_out_transcript(transcript, video_out_path);
-let summary = await get_summary(transcript);
-write_out_summary(summary, video_out_path);
+  let transcript = await retrieve_transcript(videoId);
+  write_out_transcript(transcript, video_out_path);
+  let summary = await get_summary(prompt, transcript);
+  write_out_summary(summary, video_out_path);
+}
