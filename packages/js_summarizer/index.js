@@ -45,50 +45,49 @@ const videoId = retrieveVideoId(
   "https://www.youtube.com/watch?v=5g4xB4yjHSk"
 );
 
+const outdir = "../../outputs";
 const response = await YoutubeTranscript.fetchTranscript(videoId);
-
-console.log(response);
+const video_out_path = `${outdir}/${videoId}`;
+const video_transcript_file_path = `${video_out_path}/transcript`;
+const video_transcript_summary_file_path = `${video_out_path}/summary`;
 
 let transcript = ``;
 for (const part of response) {
   transcript += `${part.text.replace(/(\r\n|\n|\r)/gm, "")} `;
 }
-
 transcript.trim();
 
 //console.log(transcript);
 
-if (!fs.existsSync(`./${videoId}`)) {
-  fs.mkdirSync(`./${videoId}`);
+if (!fs.existsSync(`${video_out_path}`)) {
+  fs.mkdirSync(`${video_out_path}`);
 }
 
-/*fs.writeFile(
-	`./${videoId}/transcript.json`,
-	JSON.stringify(response, null, 4),
-	(err) => {
-		if (err) throw err;
-		console.log('saved transcript to json');
-	}
-);*/
+fs.writeFile(
+  `${video_transcript_file_path}.json`,
+  JSON.stringify(response, null, 4),
+  (err) => {
+    if (err) throw err;
+    console.log("saved transcript to json");
+  }
+);
 
-fs.writeFile(`./${videoId}/transcript.txt`, transcript, (err) => {
+fs.writeFile(`${video_transcript_file_path}.txt`, transcript, (err) => {
   if (err) throw err;
   console.log("saved transcript to txt");
 });
 
-const system = `Du sollst Youtube Transcripts kurz und verständlich zusammenfassen und auf das wesentliche reduzieren.`;
-const prompt = `Fasse mir das folgende Transcript zusammmen:`;
+const prompt = `Fasse mir das folgende Transcript zusammen:`;
 
 const messages = [
-  { role: "system", content: system },
-  { role: "user", content: prompt },
+  { role: "system", content: prompt },
   { role: "user", content: transcript },
 ];
 
 let answer = await ask4(messages);
 console.log(answer);
 
-fs.writeFile(`./${videoId}/answer.txt`, answer, (err) => {
+fs.writeFile(`${video_transcript_summary_file_path}.txt`, answer, (err) => {
   if (err) throw err;
   console.log("saved answer to txt");
 });

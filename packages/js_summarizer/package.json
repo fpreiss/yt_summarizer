@@ -4,6 +4,7 @@
 	"description": "",
 	"main": "index.js",
 	"scripts": {
+		"once": "node -r dotenv/config index.js",
 		"dev": "nodemon -r dotenv/config index.js",
 		"test": "echo \"Error: no test specified\" && exit 1"
 	},
